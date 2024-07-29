@@ -12,6 +12,15 @@ let masterTrains = [];
 let isDataLoaded = false;
 let stationToTrains = {};
 
+const CANONICAL_CODES = {
+  "MGS": "DDU",
+};
+const getCanonicalCode = (code) => CANONICAL_CODES[code] || code;
+const extractCode = (stationName) => {
+  const parts = (stationName || "").split(" - ");
+  return getCanonicalCode(parts[parts.length - 1]?.trim());
+};
+
 const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const MINUTES_IN_WEEK = 7 * 24 * 60;
 
@@ -40,8 +49,7 @@ if (typeof window !== "undefined") {
       masterTrains.forEach((train) => {
         if (train.trainRoute && Array.isArray(train.trainRoute)) {
           train.trainRoute.forEach((s, idx) => {
-            const parts = (s.stationName || "").split(" - ");
-            const code = parts[parts.length - 1]?.trim();
+            const code = extractCode(s.stationName);
             if (code) {
               if (!stationToTrains[code]) stationToTrains[code] = [];
               stationToTrains[code].push({
@@ -141,16 +149,16 @@ const SearchCard = ({ className }) => {
 
     const fromMatch = ALL_STATIONS.find(s => s.name.toLowerCase() === from.toLowerCase() || s.code.toLowerCase() === from.toLowerCase());
     if (fromMatch) {
-      resolvedFromCode = fromMatch.code;
+      resolvedFromCode = getCanonicalCode(fromMatch.code);
     } else {
-      resolvedFromCode = from.toUpperCase();
+      resolvedFromCode = getCanonicalCode(from.toUpperCase());
     }
 
     const toMatch = ALL_STATIONS.find(s => s.name.toLowerCase() === to.toLowerCase() || s.code.toLowerCase() === to.toLowerCase());
     if (toMatch) {
-      resolvedToCode = toMatch.code;
+      resolvedToCode = getCanonicalCode(toMatch.code);
     } else {
-      resolvedToCode = to.toUpperCase();
+      resolvedToCode = getCanonicalCode(to.toUpperCase());
     }
 
     let dateStr = "";
@@ -172,10 +180,11 @@ const SearchCard = ({ className }) => {
         if (train.trainRoute && Array.isArray(train.trainRoute)) {
           for (let i = 0; i < train.trainRoute.length; i++) {
             const s = train.trainRoute[i];
-            if (s.stationName && s.stationName.endsWith(`- ${resolvedFromCode}`)) {
+            const sCode = extractCode(s.stationName);
+            if (sCode === resolvedFromCode) {
               fromIndex = i;
             }
-            if (s.stationName && s.stationName.endsWith(`- ${resolvedToCode}`)) {
+            if (sCode === resolvedToCode) {
               toIndex = i;
             }
           }
@@ -199,8 +208,7 @@ const SearchCard = ({ className }) => {
         // Check all intermediate stations Z after X on Train A
         for (let i = startIndexA + 1; i < trainA.trainRoute.length; i++) {
           const stopZ = trainA.trainRoute[i];
-          const parts = (stopZ.stationName || "").split(" - ");
-          const zCode = parts[parts.length - 1]?.trim();
+          const zCode = extractCode(stopZ.stationName);
           if (!zCode) continue;
           // Arrival time of Train A at Z
           const arrA_str =
@@ -217,7 +225,7 @@ const SearchCard = ({ className }) => {
               if (!trainB.trainRoute) return false;
               const destY = trainB.trainRoute
                 .slice(zIndexB + 1)
-                .find((s) => s.stationName?.endsWith(`- ${resolvedToCode}`));
+                .find((s) => extractCode(s.stationName) === resolvedToCode);
               if (!destY) return false;
               const depB_str =
                 t2.stopDetails.departs === "Source"

@@ -11,6 +11,15 @@ const formatMins = (mins) => {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 };
 
+const CANONICAL_CODES = {
+  "MGS": "DDU",
+};
+const getCanonicalCode = (code) => CANONICAL_CODES[code] || code;
+const extractCode = (stationName) => {
+  const parts = (stationName || "").split(" - ");
+  return getCanonicalCode(parts[parts.length - 1]?.trim());
+};
+
 const getMinutes = (timeStr, dayStr) => {
   if (!timeStr || timeStr === "Source" || timeStr === "Destination") return 0;
   const parts = timeStr.split(":");
@@ -81,10 +90,10 @@ const SearchResults = () => {
       if (res.type === "direct") {
         const train = res.train;
         const fromStop = train.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${fromCode}`),
+          extractCode(s.stationName) === getCanonicalCode(fromCode),
         );
         const toStop = train.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${toCode}`),
+          extractCode(s.stationName) === getCanonicalCode(toCode),
         );
         const depStr = fromStop.departs === "Source" ? fromStop.arrives : fromStop.departs;
         const arrStr = toStop.arrives === "Destination" ? toStop.departs : toStop.arrives;
@@ -146,13 +155,13 @@ const SearchResults = () => {
         const t1 = res.train1;
         const t2 = res.train2;
         const fromStop = t1.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${fromCode}`),
+          extractCode(s.stationName) === getCanonicalCode(fromCode),
         );
         const zStop1 = t1.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${res.transferStationCode}`),
+          extractCode(s.stationName) === getCanonicalCode(res.transferStationCode),
         );
         const zStop2 = t2.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${res.transferStationCode}`),
+          extractCode(s.stationName) === getCanonicalCode(res.transferStationCode),
         );
         const toStop = res.destY;
         const dist1 = Math.abs(
