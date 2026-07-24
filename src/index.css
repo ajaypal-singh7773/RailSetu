@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f0f8ff; /* Very light blue */
+    --foreground: #020817;
+    --card: #ffffff;
+    --card-foreground: #020817;
+    --popover: #ffffff;
+    --popover-foreground: #020817;
+    --primary: #004AAD;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #FF8C32;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #f8fafc;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #004AAD;
+    --radius: 1.5rem; /* 24px rounded corners */
+  }
+
+  .dark {
+    --background: #020817; /* Very dark blue */
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --popover: #0f172a;
+    --popover-foreground: #f8fafc;
+    --primary: #004AAD;
+    --primary-foreground: #ffffff;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --accent: #FF8C32;
+    --accent-foreground: #ffffff;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #f8fafc;
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #004AAD;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    background: radial-gradient(circle at top left, #e0efff, #ffffff);
+    .skeleton-shimmer {
+      background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.5) 60%, rgba(255, 255, 255, 0));
+      transform: translateX("-100%");
+      animation: shimmer 2s infinite;
+    }
+  }
+  
+  .dark body {
+    background: radial-gradient(circle at top left, #0a192f, #020817);
+  }
+}
+
+/* React DatePicker Custom Styling */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+.react-datepicker {
+  @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-sans shadow-xl rounded-xl overflow-hidden;
+}
+.react-datepicker__header {
+  @apply bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 pt-4;
+}
+.react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header {
+  @apply text-foreground font-bold;
+}
+.react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name {
+  @apply text-foreground opacity-80;
+}
+.react-datepicker__day--selected, .react-datepicker__day--in-selecting-range, .react-datepicker__day--in-range, .react-datepicker__month-text--selected, .react-datepicker__month-text--in-selecting-range, .react-datepicker__month-text--in-range, .react-datepicker__quarter-text--selected, .react-datepicker__quarter-text--in-selecting-range, .react-datepicker__quarter-text--in-range, .react-datepicker__year-text--selected, .react-datepicker__year-text--in-selecting-range, .react-datepicker__year-text--in-range {
+  @apply bg-primary text-white hover:opacity-90 rounded-full font-bold;
+}
+.react-datepicker__day:hover, .react-datepicker__month-text:hover, .react-datepicker__quarter-text:hover, .react-datepicker__year-text:hover {
+  @apply bg-slate-100 dark:bg-slate-700 rounded-full;
+}
+.react-datepicker__day--keyboard-selected, .react-datepicker__month-text--keyboard-selected, .react-datepicker__quarter-text--keyboard-selected, .react-datepicker__year-text--keyboard-selected {
+  @apply text-primary bg-primary bg-opacity-20 rounded-full;
+}
+.react-datepicker__day--disabled, .react-datepicker__month-text--disabled, .react-datepicker__quarter-text--disabled, .react-datepicker__year-text--disabled {
+  @apply text-foreground opacity-20 cursor-not-allowed hover:bg-transparent;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-lg dark:bg-slate-900/70 dark:border-slate-800/50;
+  }
+  
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.05)] rounded-[24px] dark:bg-slate-900/80 dark:border-slate-700/50 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)];
+  }
+  
+  .glass-nav {
+    @apply bg-white/60 backdrop-blur-lg border-b border-white/20 shadow-sm dark:bg-slate-900/60 dark:border-slate-800/50;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
