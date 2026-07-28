@@ -138,21 +138,8 @@ const RouteCard = ({ route, index }) => {
           </div>
         </div>
 
-        {/* Right Side: Stats & Action */}
-        <div className="flex lg:flex-col items-center lg:items-end justify-between border-t lg:border-t-0 lg:border-l border-border pt-4 lg:pt-0 lg:pl-6 gap-4">
-          <div className="flex lg:flex-col items-center lg:items-end gap-4 lg:gap-2">
-
-
-            <div className="flex flex-col items-start lg:items-end">
-              <span className="text-xs text-foreground/50 font-medium">
-                Total Fare
-              </span>
-              <div className="text-2xl font-bold flex items-center text-accent">
-                {route.totalFare}
-              </div>
-            </div>
-          </div>
-
+        {/* Right Side: Action */}
+        <div className="flex items-center justify-center border-t lg:border-t-0 lg:border-l border-border pt-4 lg:pt-0 lg:pl-6 h-full">
           <button className="hidden lg:flex px-6 py-2 bg-primary/10 text-primary font-bold rounded-full group-hover:bg-primary group-hover:text-white transition-colors items-center gap-2">
             Details <ArrowRight className="w-4 h-4" />
           </button>
