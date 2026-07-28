@@ -1,7 +1,50 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, MapPin } from "lucide-react";
 
 const Contact = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "Report a Bug",
+    message: ""
+  });
+  const [status, setStatus] = useState(""); // "sending", "success", "error"
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    
+    const data = {
+      access_key: "bb11e813-7383-4a9b-8bbb-0ffe32dffb8d",
+      ...formData
+    };
+
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (json.success) {
+        setStatus("success");
+        setFormData({ name: "", email: "", subject: "Report a Bug", message: "" });
+        setTimeout(() => setStatus(""), 5000); // Clear success message after 5 seconds
+      } else {
+        setStatus("error");
+      }
+    } catch (err) {
+      setStatus("error");
+    }
+  };
   return (
     <div className="max-w-2xl mx-auto py-12 px-4 animate-fade-in">
       <div className="text-center mb-10">
@@ -19,7 +62,7 @@ const Contact = () => {
         animate={{ opacity: 1, y: 0 }}
         className="glass-card p-6 md:p-10 rounded-3xl"
       >
-        <form className="space-y-5 mb-10">
+        <form onSubmit={handleSubmit} className="space-y-5 mb-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-foreground/80 mb-1.5">
@@ -27,6 +70,10 @@ const Contact = () => {
               </label>
               <input
                 type="text"
+                name="name"
+                required
+                value={formData.name}
+                onChange={handleChange}
                 className="w-full bg-white/40 dark:bg-slate-900/40 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all placeholder:text-foreground/40 text-foreground"
                 placeholder="Your Name"
               />
@@ -37,6 +84,10 @@ const Contact = () => {
               </label>
               <input
                 type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
                 className="w-full bg-white/40 dark:bg-slate-900/40 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all placeholder:text-foreground/40 text-foreground"
                 placeholder="your@email.com"
               />
@@ -47,10 +98,15 @@ const Contact = () => {
             <label className="block text-sm font-semibold text-foreground/80 mb-1.5">
               Subject
             </label>
-            <select className="w-full bg-white/40 dark:bg-slate-900/40 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all text-foreground appearance-none">
-              <option value="bug">Report a Bug</option>
-              <option value="route">Suggest a Route</option>
-              <option value="general">General Inquiry</option>
+            <select 
+              name="subject"
+              value={formData.subject}
+              onChange={handleChange}
+              className="w-full bg-white/40 dark:bg-slate-900/40 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all text-foreground appearance-none"
+            >
+              <option value="Report a Bug">Report a Bug</option>
+              <option value="Suggest a Route">Suggest a Route</option>
+              <option value="General Inquiry">General Inquiry</option>
             </select>
           </div>
 
@@ -60,13 +116,33 @@ const Contact = () => {
             </label>
             <textarea
               rows={5}
+              name="message"
+              required
+              value={formData.message}
+              onChange={handleChange}
               className="w-full bg-white/40 dark:bg-slate-900/40 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all placeholder:text-foreground/40 text-foreground resize-none"
               placeholder="How can I help you?"
             ></textarea>
           </div>
-          <button className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:shadow-primary/30 transform hover:-translate-y-0.5 transition-all">
-            Send Message
+          
+          <button 
+            type="submit" 
+            disabled={status === "sending"}
+            className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:shadow-primary/30 transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {status === "sending" ? "Sending..." : "Send Message"}
           </button>
+          
+          {status === "success" && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-green-600 dark:text-green-400 font-semibold text-center mt-4">
+              Message sent successfully! I'll get back to you soon.
+            </motion.p>
+          )}
+          {status === "error" && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 font-semibold text-center mt-4">
+              Failed to send message. Please try again.
+            </motion.p>
+          )}
         </form>
 
         <div className="pt-8 border-t border-border flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
@@ -77,7 +153,7 @@ const Contact = () => {
               </div>
               <div>
                 <p className="text-foreground font-semibold">
-                  ajaypalsingh941444@gmail.com
+                  ajaypalsinghrathorework@gmail.com
                 </p>
               </div>
             </div>

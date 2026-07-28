@@ -62,6 +62,9 @@ const RouteCard = ({ route, index }) => {
               <div className="text-2xl font-bold text-foreground">
                 {departureLeg.departure}
               </div>
+              <div className="text-sm font-bold text-primary/80 mt-1 mb-0.5">
+                {route.departureDate}
+              </div>
               <div className="text-sm font-medium text-foreground/60">
                 {route.from.split(" ")[0]}
               </div>
@@ -89,6 +92,9 @@ const RouteCard = ({ route, index }) => {
             <div className="text-center">
               <div className="text-2xl font-bold text-foreground">
                 {arrivalLeg.arrival}
+              </div>
+              <div className="text-sm font-bold text-primary/80 mt-1 mb-0.5">
+                {route.arrivalDate}
               </div>
               <div className="text-sm font-medium text-foreground/60">
                 {route.to.split(" ")[0]}
@@ -135,15 +141,7 @@ const RouteCard = ({ route, index }) => {
         {/* Right Side: Stats & Action */}
         <div className="flex lg:flex-col items-center lg:items-end justify-between border-t lg:border-t-0 lg:border-l border-border pt-4 lg:pt-0 lg:pl-6 gap-4">
           <div className="flex lg:flex-col items-center lg:items-end gap-4 lg:gap-2">
-            <div className="flex flex-col items-center lg:items-end">
-              <span className="text-xs text-foreground/50 font-medium">
-                Reliability
-              </span>
-              <ReliabilityMeter
-                score={route.reliabilityScore}
-                className="scale-90 lg:scale-100"
-              />
-            </div>
+
 
             <div className="flex flex-col items-start lg:items-end">
               <span className="text-xs text-foreground/50 font-medium">

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, ArrowRightLeft, Search } from "lucide-react";
+import { MapPin, Calendar, ArrowRightLeft, Search, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { cn } from "../utils/cn";
-import stationData from "../../railsetu_stations.json";
+import stationData from "../data/railsetu_stations.json";
 
 let masterTrains = [];
 let isDataLoaded = false;
@@ -81,6 +81,18 @@ const SearchCard = ({ className }) => {
   const [toSuggestions, setToSuggestions] = useState([]);
   const [showFrom, setShowFrom] = useState(false);
   const [showTo, setShowTo] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("recentSearches");
+      if (saved) {
+        setRecentSearches(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   useEffect(() => {
     if (from.length >= 2 && showFrom) {
@@ -124,6 +136,23 @@ const SearchCard = ({ className }) => {
       return;
     }
 
+    let resolvedFromCode = "";
+    let resolvedToCode = "";
+
+    const fromMatch = ALL_STATIONS.find(s => s.name.toLowerCase() === from.toLowerCase() || s.code.toLowerCase() === from.toLowerCase());
+    if (fromMatch) {
+      resolvedFromCode = fromMatch.code;
+    } else {
+      resolvedFromCode = from.toUpperCase();
+    }
+
+    const toMatch = ALL_STATIONS.find(s => s.name.toLowerCase() === to.toLowerCase() || s.code.toLowerCase() === to.toLowerCase());
+    if (toMatch) {
+      resolvedToCode = toMatch.code;
+    } else {
+      resolvedToCode = to.toUpperCase();
+    }
+
     let dateStr = "";
     let dayName = "MON";
     if (date) {
@@ -143,10 +172,10 @@ const SearchCard = ({ className }) => {
         if (train.trainRoute && Array.isArray(train.trainRoute)) {
           for (let i = 0; i < train.trainRoute.length; i++) {
             const s = train.trainRoute[i];
-            if (s.stationName && s.stationName.endsWith(`- ${from}`)) {
+            if (s.stationName && s.stationName.endsWith(`- ${resolvedFromCode}`)) {
               fromIndex = i;
             }
-            if (s.stationName && s.stationName.endsWith(`- ${to}`)) {
+            if (s.stationName && s.stationName.endsWith(`- ${resolvedToCode}`)) {
               toIndex = i;
             }
           }
@@ -158,7 +187,7 @@ const SearchCard = ({ className }) => {
     // If no direct routes found, trigger Multi-Hop Routing logic (Constraint 1)
     if (results.length === 0) {
       const searchDayIdx = date ? date.getDay() : 1;
-      const trainsFromX = stationToTrains[from] || [];
+      const trainsFromX = stationToTrains[resolvedFromCode] || [];
       // Filter trains leaving X on the correct day
       const validTrainsFromX = trainsFromX.filter(
         (t) => t.train.runningDays && t.train.runningDays[DAYS[searchDayIdx]],
@@ -188,7 +217,7 @@ const SearchCard = ({ className }) => {
               if (!trainB.trainRoute) return false;
               const destY = trainB.trainRoute
                 .slice(zIndexB + 1)
-                .find((s) => s.stationName?.endsWith(`- ${to}`));
+                .find((s) => s.stationName?.endsWith(`- ${resolvedToCode}`));
               if (!destY) return false;
               const depB_str =
                 t2.stopDetails.departs === "Source"
@@ -240,13 +269,47 @@ const SearchCard = ({ className }) => {
           }
         }
       }
+      // Deduplicate routes with the same train1 and train2, keeping the one with the highest layover
+      const uniqueRoutesMap = new Map();
+      for (const route of indirectRoutes) {
+        const key = `${route.train1.trainNumber}-${route.train2.trainNumber}`;
+        if (!uniqueRoutesMap.has(key)) {
+          uniqueRoutesMap.set(key, route);
+        } else {
+          const existing = uniqueRoutesMap.get(key);
+          if (route.waitTime > existing.waitTime) {
+            uniqueRoutesMap.set(key, route);
+          }
+        }
+      }
+      
+      const uniqueIndirectRoutes = Array.from(uniqueRoutesMap.values());
+
       // Sort indirect routes by wait time and take top 15
-      indirectRoutes.sort((a, b) => a.waitTime - b.waitTime);
-      results = indirectRoutes.slice(0, 15);
+      uniqueIndirectRoutes.sort((a, b) => a.waitTime - b.waitTime);
+      results = uniqueIndirectRoutes.slice(0, 15);
+    }
+
+    // Save to Recent Searches
+    const searchRecord = { 
+      from: resolvedFromCode, 
+      to: resolvedToCode, 
+      fromName: fromMatch ? fromMatch.name : from,
+      toName: toMatch ? toMatch.name : to,
+      date: dateStr 
+    };
+    try {
+      const prevSearches = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+      const filteredSearches = prevSearches.filter(s => !(s.from === resolvedFromCode && s.to === resolvedToCode));
+      const newSearches = [searchRecord, ...filteredSearches].slice(0, 3);
+      localStorage.setItem("recentSearches", JSON.stringify(newSearches));
+      setRecentSearches(newSearches);
+    } catch (e) {
+      console.error(e);
     }
 
     // We can pass the filtered results to the search results page via state
-    navigate(`/search?from=${from}&to=${to}&date=${dateStr}`, {
+    navigate(`/search?from=${resolvedFromCode}&to=${resolvedToCode}&date=${dateStr}&fromName=${encodeURIComponent(searchRecord.fromName)}&toName=${encodeURIComponent(searchRecord.toName)}`, {
       state: { searchResults: results },
     });
   };
@@ -289,7 +352,7 @@ const SearchCard = ({ className }) => {
                     key={i}
                     onMouseDown={(e) => {
                       e.preventDefault(); // Prevent onBlur from firing first
-                      setFrom(s.code);
+                      setFrom(s.name);
                       setShowFrom(false);
                     }}
                     className="px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex justify-between"
@@ -334,7 +397,7 @@ const SearchCard = ({ className }) => {
                     key={i}
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      setTo(s.code);
+                      setTo(s.name);
                       setShowTo(false);
                     }}
                     className="px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex justify-between"
@@ -375,6 +438,35 @@ const SearchCard = ({ className }) => {
           <span className="md:hidden">Search</span>
         </button>
       </form>
+
+      {/* Recent Searches */}
+      {recentSearches.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }}
+          className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3"
+        >
+          <span className="text-sm font-medium text-foreground/60 flex items-center gap-1">
+            <Clock className="w-4 h-4" /> Recent:
+          </span>
+          {recentSearches.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setFrom(s.fromName || s.from);
+                setTo(s.toName || s.to);
+                setDate(new Date(s.date));
+              }}
+              className="px-4 py-1.5 bg-white/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-700 rounded-full border border-white/40 dark:border-slate-700 shadow-sm hover:shadow transition-all text-xs font-semibold flex items-center gap-2 group"
+            >
+              <span className="text-foreground">{s.fromName || s.from}</span>
+              <ArrowRightLeft className="w-3 h-3 text-primary group-hover:scale-110 transition-transform" />
+              <span className="text-foreground">{s.toName || s.to}</span>
+            </button>
+          ))}
+        </motion.div>
+      )}
     </motion.div>
   );
 };

@@ -66,25 +66,7 @@ const RouteDetails = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6">
-          <div className="flex flex-col items-center">
-            <span className="text-xs text-foreground/50 font-medium mb-1">
-              Reliability
-            </span>
-            <ReliabilityMeter score={route.reliabilityScore} />
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-xs text-foreground/50 font-medium mb-1">
-              Total Fare
-            </span>
-            <span className="text-3xl font-bold text-accent">
-              {route.totalFare}
-            </span>
-            <button className="mt-2 px-6 py-2 rounded-full bg-primary text-white font-bold text-sm hover:shadow-lg hover:shadow-primary/30 transition-all">
-              Book Now
-            </button>
-          </div>
-        </div>
+
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -95,15 +77,8 @@ const RouteDetails = () => {
           </h3>
 
           <div className="relative pl-6 md:pl-10 pb-8 mt-4">
-            {/* Continuous Vertical Line */}
-            <div className="absolute left-[11px] md:left-[19px] top-4 bottom-4 w-[3px] bg-slate-200 dark:bg-slate-700/50 rounded-full z-0 overflow-hidden">
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: "100%" }}
-                transition={{ duration: 1.5, ease: "easeInOut" }}
-                className="w-full bg-gradient-to-b from-primary via-accent to-primary"
-              />
-            </div>
+            {/* Continuous Vertical Line (Dotted for entire journey, overridden by solid blue on train legs) */}
+            <div className="absolute left-[10px] md:left-[18px] top-6 bottom-6 w-1 border-l-[3px] border-dashed border-slate-300 dark:border-slate-600 z-0"></div>
 
             <div className="relative z-10 flex flex-col">
               {route.legs.map((leg, idx) => {
@@ -117,7 +92,7 @@ const RouteDetails = () => {
                       className="my-4 relative flex items-center group"
                     >
                       {/* Transfer Node indicator on the line */}
-                      <div className="absolute -left-[30px] md:-left-[38px] w-8 h-8 rounded-full bg-background border-[3px] border-orange-500 shadow-md shadow-orange-500/20 flex items-center justify-center z-20">
+                      <div className="absolute -left-[28px] md:-left-[36px] w-8 h-8 rounded-full bg-background border-[3px] border-orange-500 shadow-sm flex items-center justify-center z-20">
                         <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></div>
                       </div>
 
@@ -146,19 +121,22 @@ const RouteDetails = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true, margin: "-50px" }}
                     transition={{ duration: 0.5, delay: idx * 0.2 }}
-                    className="flex flex-col"
+                    className="flex flex-col relative"
                   >
+                    {/* Solid Line for Train Ride */}
+                    <div className="absolute -left-[14px] md:-left-[22px] top-6 bottom-6 w-[3px] bg-primary z-0"></div>
+
                     {/* Departure Node */}
                     <div className="relative flex items-center gap-4 md:gap-6 mt-2 mb-2">
-                      <div className="absolute -left-[27px] md:-left-[35px] w-7 h-7 rounded-full bg-background border-[3px] border-primary flex items-center justify-center z-20 shadow-sm">
-                        <div className="w-2 h-2 rounded-full bg-primary"></div>
+                      <div className="absolute -left-[28px] md:-left-[36px] w-8 h-8 rounded-full bg-background border-[3px] border-primary flex items-center justify-center z-20 shadow-sm">
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
                       </div>
                       <div className="ml-6 md:ml-8 flex flex-col">
                         <span className="text-xl font-bold text-foreground">
                           {leg.from?.split(" ")[0]}
                         </span>
                         <span className="text-sm font-bold text-primary">
-                          Departs {leg.departure}
+                          Departs {leg.departure} <span className="text-foreground/50 font-medium ml-1">({leg.departureDate})</span>
                         </span>
                       </div>
                     </div>
@@ -194,15 +172,15 @@ const RouteDetails = () => {
 
                     {/* Arrival Node */}
                     <div className="relative flex items-center gap-4 md:gap-6 mb-2 mt-2">
-                      <div className="absolute -left-[27px] md:-left-[35px] w-7 h-7 rounded-full bg-background border-[3px] border-accent flex items-center justify-center z-20 shadow-sm">
-                        <div className="w-2 h-2 rounded-full bg-accent"></div>
+                      <div className="absolute -left-[28px] md:-left-[36px] w-8 h-8 rounded-full bg-background border-[3px] border-accent flex items-center justify-center z-20 shadow-sm">
+                        <div className="w-2.5 h-2.5 rounded-full bg-accent"></div>
                       </div>
                       <div className="ml-6 md:ml-8 flex flex-col">
                         <span className="text-xl font-bold text-foreground">
                           {leg.to?.split(" ")[0]}
                         </span>
                         <span className="text-sm font-bold text-accent">
-                          Arrives {leg.arrival}
+                          Arrives {leg.arrival} <span className="text-foreground/50 font-medium ml-1">({leg.arrivalDate})</span>
                         </span>
                       </div>
                     </div>
@@ -215,42 +193,8 @@ const RouteDetails = () => {
 
         {/* Sidebar Info */}
         <div className="w-full lg:w-1/3 flex flex-col gap-6">
-          <div className="glass-card p-6">
-            <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-green-500" />
-              Transfer Analysis
-            </h4>
-            <p className="text-sm text-foreground/70 mb-4 leading-relaxed">
-              Based on historical data, this route has a{" "}
-              {route.reliabilityScore}% success rate for catching all
-              connections.
-            </p>
-            <div className="w-full bg-border h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-green-500 h-full"
-                style={{ width: `${route.reliabilityScore}%` }}
-              ></div>
-            </div>
-          </div>
 
-          <div className="glass-card p-6">
-            <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Info className="w-5 h-5 text-primary" />
-              Journey Tips
-            </h4>
-            <ul className="space-y-3 text-sm text-foreground/70">
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0"></span>
-                Book tickets early as {route.legs[0]?.trainName} has high
-                waitlist probability.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0"></span>
-                The transfer at New Delhi might require moving between platforms
-                1 and 12.
-              </li>
-            </ul>
-          </div>
+
 
           {/* Map Placeholder */}
           <div className="glass-card p-6 bg-slate-100 dark:bg-slate-800/30 flex items-center justify-center min-h-[200px] border border-dashed border-border/60">

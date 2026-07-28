@@ -2,7 +2,12 @@ import { motion } from "framer-motion";
 import { Filter, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
-const FilterSidebar = () => {
+const FilterSidebar = ({ 
+  selectedDepartureTimes = [], 
+  toggleDepartureTime,
+  selectedTransfers = [],
+  toggleTransfers
+}) => {
   const [openSections, setOpenSections] = useState({
     transfers: true,
     budget: true,
@@ -49,90 +54,57 @@ const FilterSidebar = () => {
       </div>
 
       <AccordionSection title="Maximum Transfers" section="transfers">
-        {["0 (Direct)", "1 Transfer", "2 Transfers", "3+ Transfers"].map(
-          (label, i) => (
+        {[
+          { id: "0", label: "0 (Direct)" },
+          { id: "1", label: "1 Transfer" },
+          { id: "2", label: "2 Transfers" },
+          { id: "3+", label: "3+ Transfers" }
+        ].map(
+          (item, i) => (
             <label
               key={i}
               className="flex items-center gap-3 cursor-pointer group"
             >
               <input
                 type="checkbox"
+                checked={selectedTransfers.includes(item.id)}
+                onChange={() => toggleTransfers && toggleTransfers(item.id)}
                 className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50 accent-primary"
               />
               <span className="text-sm text-foreground/70 group-hover:text-foreground transition-colors">
-                {label}
+                {item.label}
               </span>
             </label>
           ),
         )}
       </AccordionSection>
 
-      <AccordionSection title="Travel Class" section="budget">
-        {[
-          "General (UR)",
-          "Sleeper (SL)",
-          "AC 3-Tier (3A)",
-          "AC 2-Tier (2A)",
-          "AC 1st Class (1A)",
-        ].map((label, i) => (
-          <label
-            key={i}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <input
-              type="checkbox"
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50 accent-primary"
-            />
-            <span className="text-sm text-foreground/70 group-hover:text-foreground transition-colors">
-              {label}
-            </span>
-          </label>
-        ))}
-      </AccordionSection>
+
 
       <AccordionSection title="Departure Time" section="time">
         {[
-          "Morning (06:00 - 12:00)",
-          "Afternoon (12:00 - 18:00)",
-          "Evening (18:00 - 00:00)",
-          "Night (00:00 - 06:00)",
-        ].map((label, i) => (
+          { id: "Morning", label: "Morning (6 AM - 12 PM)" },
+          { id: "Afternoon", label: "Afternoon (12 PM - 6 PM)" },
+          { id: "Evening", label: "Evening (6 PM - 12 AM)" },
+          { id: "Night", label: "Night (12 AM - 6 AM)" },
+        ].map((item, i) => (
           <label
             key={i}
             className="flex items-center gap-3 cursor-pointer group"
           >
             <input
               type="checkbox"
+              checked={selectedDepartureTimes.includes(item.id)}
+              onChange={() => toggleDepartureTime && toggleDepartureTime(item.id)}
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50 accent-primary"
             />
             <span className="text-sm text-foreground/70 group-hover:text-foreground transition-colors">
-              {label}
+              {item.label}
             </span>
           </label>
         ))}
       </AccordionSection>
 
-      <AccordionSection title="Train Options" section="type">
-        {[
-          "Only Available Seats",
-          "Only Tatkal",
-          "AC First Class (1A)",
-          "Sleeper (SL)",
-        ].map((label, i) => (
-          <label
-            key={i}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <input
-              type="checkbox"
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50 accent-primary"
-            />
-            <span className="text-sm text-foreground/70 group-hover:text-foreground transition-colors">
-              {label}
-            </span>
-          </label>
-        ))}
-      </AccordionSection>
     </div>
   );
 };

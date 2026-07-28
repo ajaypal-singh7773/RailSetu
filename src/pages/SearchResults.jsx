@@ -22,15 +22,46 @@ const getMinutes = (timeStr, dayStr) => {
   );
 };
 
+const getFormattedDate = (baseDate, timeStr, addedMins = 0) => {
+  const d = new Date(baseDate);
+  if (timeStr && timeStr !== "Source" && timeStr !== "Destination") {
+    const [h, m] = timeStr.split(':').map(Number);
+    d.setHours(h, m, 0, 0);
+  } else {
+    d.setHours(0, 0, 0, 0);
+  }
+  d.setMinutes(d.getMinutes() + addedMins);
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short"
+  });
+};
+
 const SearchResults = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("Fastest");
   const [routes, setRoutes] = useState([]);
+  const [sortBy, setSortBy] = useState("Fastest");
+  const [selectedDepartureTimes, setSelectedDepartureTimes] = useState([]);
+  const [selectedTransfers, setSelectedTransfers] = useState([]);
+
+  const toggleDepartureTime = (timeId) => {
+    setSelectedDepartureTimes((prev) => 
+      prev.includes(timeId) ? prev.filter(id => id !== timeId) : [...prev, timeId]
+    );
+  };
+
+  const toggleTransfers = (transferId) => {
+    setSelectedTransfers((prev) => 
+      prev.includes(transferId) ? prev.filter(id => id !== transferId) : [...prev, transferId]
+    );
+  };
 
   const urlParams = new URLSearchParams(window.location.search);
-  const from = urlParams.get("from") || "NGO";
-  const to = urlParams.get("to") || "BBS";
+  const fromCode = urlParams.get("from") || "NGO";
+  const toCode = urlParams.get("to") || "BBS";
+  const fromName = urlParams.get("fromName") || fromCode;
+  const toName = urlParams.get("toName") || toCode;
   const dateStr = urlParams.get("date");
   const dateObj = dateStr ? new Date(dateStr) : new Date();
   const displayDate = dateObj.toLocaleDateString("en-GB", {
@@ -50,11 +81,15 @@ const SearchResults = () => {
       if (res.type === "direct") {
         const train = res.train;
         const fromStop = train.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${from}`),
+          s.stationName.endsWith(`- ${fromCode}`),
         );
         const toStop = train.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${to}`),
+          s.stationName.endsWith(`- ${toCode}`),
         );
+        const depStr = fromStop.departs === "Source" ? fromStop.arrives : fromStop.departs;
+        const arrStr = toStop.arrives === "Destination" ? toStop.departs : toStop.arrives;
+        const durationMins = getMinutes(arrStr, toStop.day) - getMinutes(depStr, fromStop.day);
+
         return {
           id: `route-dir-${idx}`,
           type: "direct",
@@ -62,11 +97,16 @@ const SearchResults = () => {
           transfers: 0,
           from: fromStop.stationName,
           to: toStop.stationName,
-          journeyTime: "Direct",
+          journeyTime: formatMins(durationMins),
+          durationMins: durationMins,
           totalDistance: `${Math.abs(parseInt(toStop.distance || "0") - parseInt(fromStop.distance || "0"))} km`,
+          rawDistance: Math.abs(parseInt(toStop.distance || "0") - parseInt(fromStop.distance || "0")),
           totalFare: `₹${Math.round(Math.abs(parseInt(toStop.distance || "0") - parseInt(fromStop.distance || "0")) * 1.5)}`,
+          rawFare: Math.round(Math.abs(parseInt(toStop.distance || "0") - parseInt(fromStop.distance || "0")) * 1.5),
           reliabilityScore: 90 + (idx % 10), // mock
           date: displayDate,
+          departureDate: getFormattedDate(dateObj, depStr, 0),
+          arrivalDate: getFormattedDate(dateObj, depStr, durationMins),
           legs: [
             {
               trainNumber: train.trainNumber,
@@ -96,6 +136,8 @@ const SearchResults = () => {
                   ),
               ),
               distance: `${Math.abs(parseInt(toStop.distance || "0") - parseInt(fromStop.distance || "0"))} km`,
+              departureDate: getFormattedDate(dateObj, depStr, 0),
+              arrivalDate: getFormattedDate(dateObj, depStr, durationMins),
             },
           ],
         };
@@ -104,7 +146,7 @@ const SearchResults = () => {
         const t1 = res.train1;
         const t2 = res.train2;
         const fromStop = t1.trainRoute.find((s) =>
-          s.stationName.endsWith(`- ${from}`),
+          s.stationName.endsWith(`- ${fromCode}`),
         );
         const zStop1 = t1.trainRoute.find((s) =>
           s.stationName.endsWith(`- ${res.transferStationCode}`),
@@ -119,6 +161,14 @@ const SearchResults = () => {
         const dist2 = Math.abs(
           parseInt(toStop.distance || "0") - parseInt(zStop2.distance || "0"),
         );
+        
+        const dep1Str = fromStop.departs === "Source" ? fromStop.arrives : fromStop.departs;
+        const arr2Str = toStop.arrives === "Destination" ? toStop.departs : toStop.arrives;
+        
+        const durationMins1 = getMinutes(zStop1.arrives === "Destination" ? zStop1.departs : zStop1.arrives, zStop1.day) - getMinutes(dep1Str, fromStop.day);
+        const durationMins2 = getMinutes(arr2Str, toStop.day) - getMinutes(zStop2.departs === "Source" ? zStop2.arrives : zStop2.departs, zStop2.day);
+        const totalDurationMins = durationMins1 + res.waitTime + durationMins2;
+
         return {
           id: `route-ind-${idx}`,
           type: "indirect",
@@ -127,11 +177,16 @@ const SearchResults = () => {
           transfers: 1,
           from: fromStop.stationName,
           to: toStop.stationName,
-          journeyTime: `${formatMins(res.waitTime)} Layover`,
+          journeyTime: formatMins(totalDurationMins),
+          durationMins: totalDurationMins,
           totalDistance: `${dist1 + dist2} km`,
+          rawDistance: dist1 + dist2,
           totalFare: `₹${Math.round((dist1 + dist2) * 1.5)}`,
+          rawFare: Math.round((dist1 + dist2) * 1.5),
           reliabilityScore: 85 - (idx % 10), // mock
           date: displayDate,
+          departureDate: getFormattedDate(dateObj, dep1Str, 0),
+          arrivalDate: getFormattedDate(dateObj, dep1Str, totalDurationMins),
           transferStationName: res.transferStationName,
           waitTimeMins: res.waitTime,
           formattedWaitTime: formatMins(res.waitTime),
@@ -164,6 +219,8 @@ const SearchResults = () => {
                   ),
               ),
               distance: `${dist1} km`,
+              departureDate: getFormattedDate(dateObj, dep1Str, 0),
+              arrivalDate: getFormattedDate(dateObj, dep1Str, durationMins1),
             },
             {
               type: "transfer",
@@ -196,22 +253,64 @@ const SearchResults = () => {
                   ),
               ),
               distance: `${dist2} km`,
+              departureDate: getFormattedDate(dateObj, dep1Str, durationMins1 + res.waitTime),
+              arrivalDate: getFormattedDate(dateObj, dep1Str, totalDurationMins),
             },
           ],
         };
       }
-    });
+    }).filter(route => route.durationMins <= 52 * 60);
 
     setRoutes(formattedRoutes);
     setLoading(false);
-  }, [location.state, from, to, displayDate]);
+  }, [location.state, fromCode, toCode, displayDate]);
 
   const sorts = [
     "Fastest",
-    "Cheapest",
-    "Least Transfers",
-    "Highest Reliability",
+    "Least Transfers"
   ];
+
+  const filteredRoutes = routes.filter(route => {
+    // 1. Departure Time Filter
+    if (selectedDepartureTimes.length > 0) {
+      const depTimeStr = route.legs?.[0]?.departure;
+      if (!depTimeStr) return false;
+      
+      const [h, m] = depTimeStr.split(":").map(Number);
+      const totalMins = h * 60 + m;
+      
+      let isMatch = false;
+      if (selectedDepartureTimes.includes("Morning") && totalMins >= 6 * 60 && totalMins < 12 * 60) isMatch = true;
+      if (selectedDepartureTimes.includes("Afternoon") && totalMins >= 12 * 60 && totalMins < 18 * 60) isMatch = true;
+      if (selectedDepartureTimes.includes("Evening") && totalMins >= 18 * 60 && totalMins < 24 * 60) isMatch = true;
+      if (selectedDepartureTimes.includes("Night") && totalMins >= 0 && totalMins < 6 * 60) isMatch = true;
+      
+      if (!isMatch) return false;
+    }
+
+    // 2. Maximum Transfers Filter
+    if (selectedTransfers.length > 0) {
+      const numTransfers = route.transfers || 0;
+      let maxAllowed = -1;
+      
+      if (selectedTransfers.includes("3+")) maxAllowed = 999;
+      else if (selectedTransfers.includes("2")) maxAllowed = 2;
+      else if (selectedTransfers.includes("1")) maxAllowed = 1;
+      else if (selectedTransfers.includes("0")) maxAllowed = 0;
+      
+      if (numTransfers > maxAllowed) return false;
+    }
+    
+    return true;
+  });
+
+  const sortedRoutes = [...filteredRoutes].sort((a, b) => {
+    if (sortBy === "Fastest") return a.durationMins - b.durationMins;
+    if (sortBy === "Cheapest") return a.rawFare - b.rawFare;
+    if (sortBy === "Least Transfers") return a.transfers - b.transfers;
+    if (sortBy === "Highest Reliability") return b.reliabilityScore - a.reliabilityScore;
+    return 0;
+  });
 
   return (
     <div className="w-full animate-fade-in">
@@ -225,9 +324,9 @@ const SearchResults = () => {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex items-center gap-3 font-bold text-lg md:text-xl">
-            <span className="text-primary">{from}</span>
+            <span className="text-primary">{fromName}</span>
             <ArrowRightLeft className="w-5 h-5 text-foreground/40" />
-            <span className="text-primary">{to}</span>
+            <span className="text-primary">{toName}</span>
           </div>
           <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
             {displayDate}
@@ -242,7 +341,12 @@ const SearchResults = () => {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
         <div className="w-full md:w-1/4 lg:w-1/5 shrink-0">
-          <FilterSidebar />
+          <FilterSidebar 
+            selectedDepartureTimes={selectedDepartureTimes}
+            toggleDepartureTime={toggleDepartureTime}
+            selectedTransfers={selectedTransfers}
+            toggleTransfers={toggleTransfers}
+          />
         </div>
 
         {/* Results Area */}
@@ -294,11 +398,11 @@ const SearchResults = () => {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-white/5 skeleton-shimmer"></div>
                   </div>
                 ))
-              : routes.map((route, i) => (
+              : sortedRoutes.map((route, i) => (
                   <RouteCard key={route.id} route={route} index={i} />
                 ))}
 
-            {!loading && routes.length === 0 && (
+            {!loading && sortedRoutes.length === 0 && (
               <div className="text-center py-20">
                 <img
                   src="/empty.svg"
